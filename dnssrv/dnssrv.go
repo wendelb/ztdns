@@ -110,7 +110,8 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 func parseQuery(m *dns.Msg) {
 	for _, q := range m.Question {
 		queryChan <- q.Name
-		if rec, ok := DNSDatabase[q.Name]; ok {
+		lookupName := strings.ToLower(q.Name)
+		if rec, ok := DNSDatabase[lookupName]; ok {
 			switch q.Qtype {
 			case dns.TypeA:
 				for _, ip := range rec.A {

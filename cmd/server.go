@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"time"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -98,7 +99,7 @@ func updateDNS() time.Time {
 			// For all online members
 			if n.Online {
 				// Clear current DNS records
-				record := n.Name + "." + domain + "." + suffix + "."
+				record := strings.ToLower(n.Name + "." + domain + "." + suffix + ".")
 				dnssrv.DNSDatabase[record] = dnssrv.Records{}
 				ip6 := []net.IP{}
 				ip4 := []net.IP{}
