@@ -26,6 +26,13 @@ var serverCmd = &cobra.Command{
 	
 	Example: ztdns server`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
+		// Check if we are running as root and post a warning
+		if (runtime.GOOS == "linux") || (runtime.GOOS == "darwin") {
+			if os.Geteuid() == 0 {
+				log.Warn("Running this application as root is discouraged. Please don't")
+			}
+		}
+
 		// Check config and bail if anything important is missing.
 		if viper.GetBool("debug") {
 			log.SetLevel(log.DebugLevel)
