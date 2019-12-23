@@ -1,5 +1,6 @@
 // Copyright © 2017 uxbh
-// This file is part of github.com/uxbh/ztdns.
+// Copyright © 2019 Bernhard Wendel
+// This file is part of github.com/wendelb/ztdns.
 
 //Package ztapi implements a (partial) API client to a ZeroTier service.
 package ztapi
