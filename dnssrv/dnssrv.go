@@ -27,10 +27,14 @@ var DNSUpdate = time.Time{}
 // DNSDatabase is a map of hostnames to the records associated with it.
 var DNSDatabase = map[string]Records{}
 
+var DNSDomains []string
+
 var queryChan chan string
 
+var soaTemplate string
+
 // Start brings up a DNS server for the specified suffix on a given port.
-func Start(iface string, port int, suffix string, req chan string) error {
+func Start(iface string, port int, suffix string, req chan string, myFQDN string) error {
 	queryChan = req
 
 	if port == 0 {
@@ -39,6 +43,9 @@ func Start(iface string, port int, suffix string, req chan string) error {
 
 	// attach request handler func
 	dns.HandleFunc(suffix+".", handleDNSRequest)
+
+	// Create SOA Record for reuse
+	soaTemplate = fmt.Sprintf("%%s 60 IN SOA %s postmaster.%s %d 14400 3600 604800 60", myFQDN, myFQDN, time.Now().Unix())
 
 	for _, addr := range getIfaceAddrs(iface) {
 		go func(suffix string, addr net.IP, port int) {
@@ -93,56 +100,72 @@ func getIfaceAddrs(iface string) []net.IP {
 	return []net.IP{net.IPv4zero}
 }
 
+func findSuffix(domain string) string {
+	for _, v := range DNSDomains {
+		if strings.HasSuffix(domain, v) {
+			return v
+		}
+	}
+
+	return ""
+}
+
 // handleDNSRequest routes an incoming DNS request to a parser.
-func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
+func handleDNSRequest(w dns.ResponseWriter, request *dns.Msg) {
 	m := new(dns.Msg)
-	m.SetReply(r)
+	m.SetReply(request)
 	m.Compress = false
 
-	switch r.Opcode {
-	case dns.OpcodeQuery:
-		parseQuery(m, r)
+	if request.Opcode == dns.OpcodeQuery {
+		for _, q := range m.Question {
+			queryChan <- q.Name
+			lookupName := strings.ToLower(q.Name)
+
+			// Find Domain from Name
+			domainName := findSuffix(lookupName)
+
+			if domainName == "" {
+				// The requested domain is not handled by this server
+				m.SetRcode(request, dns.RcodeRefused)
+				continue
+			}
+
+			// handle ANY queries
+			if q.Qtype == dns.TypeANY {
+				rr, err := dns.NewRR(fmt.Sprintf("%s HINFO \"RFC8482\" \"\"", q.Name))
+				if err == nil {
+					m.Answer = append(m.Answer, rr)
+				}
+				continue
+			}
+
+			if rec, ok := DNSDatabase[lookupName]; ok {
+				// We have someone with this name
+				switch q.Qtype {
+				case dns.TypeA:
+					for _, ip := range rec.A {
+						rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip.String()))
+						if err == nil {
+							m.Answer = append(m.Answer, rr)
+						}
+					}
+				case dns.TypeAAAA:
+					for _, ip := range rec.AAAA {
+						rr, err := dns.NewRR(fmt.Sprintf("%s AAAA %s", q.Name, ip.String()))
+						if err == nil {
+							m.Answer = append(m.Answer, rr)
+						}
+					}
+				}
+			} else {
+				// We don't have someone with this name -> return record not found
+				m.SetRcode(request, dns.RcodeNameError)
+				soa, _ := dns.NewRR(fmt.Sprintf(soaTemplate, domainName))
+				m.Ns = append(m.Ns, soa)
+			}
+		}
+
 	}
 
 	w.WriteMsg(m)
-}
-
-// parseQuery reads and creates an answer to a DNS query.
-func parseQuery(m *dns.Msg, request *dns.Msg) {
-	for _, q := range m.Question {
-		queryChan <- q.Name
-		lookupName := strings.ToLower(q.Name)
-
-		// handle ANY queries
-		if q.Qtype == dns.TypeANY {
-			rr, err := dns.NewRR(fmt.Sprintf("%s HINFO \"RFC8482\" \"\"", q.Name))
-			if err == nil {
-				m.Answer = append(m.Answer, rr)
-			}
-			continue
-		}
-
-		if rec, ok := DNSDatabase[lookupName]; ok {
-			// We have someone with this name
-			switch q.Qtype {
-			case dns.TypeA:
-				for _, ip := range rec.A {
-					rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip.String()))
-					if err == nil {
-						m.Answer = append(m.Answer, rr)
-					}
-				}
-			case dns.TypeAAAA:
-				for _, ip := range rec.AAAA {
-					rr, err := dns.NewRR(fmt.Sprintf("%s AAAA %s", q.Name, ip.String()))
-					if err == nil {
-						m.Answer = append(m.Answer, rr)
-					}
-				}
-			}
-		} else {
-			// We don't have someone with this name -> return record not found
-			m.SetRcode(request, dns.RcodeNameError)
-		}
-	}
 }

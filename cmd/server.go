@@ -51,14 +51,21 @@ var serverCmd = &cobra.Command{
 		if viper.GetString("suffix") == "" {
 			return fmt.Errorf("no DNS Suffix provided. Run ztdns mkconfig first")
 		}
+		if viper.GetString("myFQDN") == "" {
+			return fmt.Errorf("no server name provided. Run ztdns mkconfig first")
+		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		// Initialize all data structures that are needed for correct DNS Server execution
+		initializeData()
+
 		// Update the DNSDatabase
 		lastUpdate := updateDNS()
-		req := make(chan string)
+
 		// Start the DNS server
-		go dnssrv.Start(viper.GetString("interface"), viper.GetInt("port"), viper.GetString("suffix"), req)
+		req := make(chan string)
+		go dnssrv.Start(viper.GetString("interface"), viper.GetInt("port"), viper.GetString("suffix"), req, viper.GetString("myFQDN"))
 
 		refresh := viper.GetInt("DbRefresh")
 		if refresh == 0 {
@@ -81,6 +88,20 @@ func init() {
 	RootCmd.AddCommand(serverCmd)
 	serverCmd.PersistentFlags().String("interface", "", "interface to listen on")
 	viper.BindPFlag("interface", serverCmd.PersistentFlags().Lookup("interface"))
+}
+
+func initializeData() {
+	suffix := viper.GetString("suffix")
+	networks := viper.GetStringMapString("Networks")
+
+	DNSDomains := make([]string, len(networks))
+	i := 0
+	for key := range networks {
+		DNSDomains[i] = strings.ToLower(key + "." + suffix + ".")
+		i++
+	}
+
+	dnssrv.DNSDomains = DNSDomains
 }
 
 func updateDNS() time.Time {
