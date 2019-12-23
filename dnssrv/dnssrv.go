@@ -100,14 +100,14 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 
 	switch r.Opcode {
 	case dns.OpcodeQuery:
-		parseQuery(m)
+		parseQuery(m, r)
 	}
 
 	w.WriteMsg(m)
 }
 
 // parseQuery reads and creates an answer to a DNS query.
-func parseQuery(m *dns.Msg) {
+func parseQuery(m *dns.Msg, request *dns.Msg) {
 	for _, q := range m.Question {
 		queryChan <- q.Name
 		lookupName := strings.ToLower(q.Name)
@@ -122,6 +122,7 @@ func parseQuery(m *dns.Msg) {
 		}
 
 		if rec, ok := DNSDatabase[lookupName]; ok {
+			// We have someone with this name
 			switch q.Qtype {
 			case dns.TypeA:
 				for _, ip := range rec.A {
@@ -138,6 +139,9 @@ func parseQuery(m *dns.Msg) {
 					}
 				}
 			}
+		} else {
+			// We don't have someone with this name -> return record not found
+			m.SetRcode(request, dns.RcodeNameError)
 		}
 	}
 }
