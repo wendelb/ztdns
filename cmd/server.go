@@ -6,14 +6,16 @@ package cmd
 import (
 	"fmt"
 	"net"
-	"time"
+	"os"
+	"runtime"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/uxbh/ztdns/dnssrv"
-	"github.com/uxbh/ztdns/ztapi"
+	"github.com/wendelb/ztdns/dnssrv"
+	"github.com/wendelb/ztdns/ztapi"
 )
 
 // serverCmd represents the server command

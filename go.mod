@@ -1,4 +1,4 @@
-module github.com/bwendel/ztdns
+module github.com/wendelb/ztdns
 
 go 1.13
 
