@@ -33,6 +33,7 @@ var queryChan chan string
 
 var soaTemplate string
 var nsTemplate string
+var myIP dns.RR
 
 // Start brings up a DNS server for the specified suffix on a given port.
 func Start(iface string, port int, suffix string, req chan string, myFQDN string) error {
@@ -44,6 +45,10 @@ func Start(iface string, port int, suffix string, req chan string, myFQDN string
 
 	// attach request handler func
 	dns.HandleFunc(suffix+".", handleDNSRequest)
+
+	// Get my IP for correct NS response
+	serverIP := getIPFromDNS(myFQDN)
+	myIP, _ = dns.NewRR(fmt.Sprintf("%s A %s", myFQDN, serverIP))
 
 	// Create SOA + NS Record for reuse
 	soaTemplate = fmt.Sprintf("%%s 3600 IN SOA %s postmaster.%s %d 14400 3600 604800 60", myFQDN, myFQDN, time.Now().Unix())
@@ -74,6 +79,16 @@ func Start(iface string, port int, suffix string, req chan string, myFQDN string
 		}(suffix, addr, port)
 	}
 	return nil
+}
+
+func getIPFromDNS(domain string) string {
+	lookupResult, err := net.LookupIP(domain)
+
+	if err != nil {
+		log.Fatalf("Cannot lookup name %s: %s", domain, err.Error())
+	}
+
+	return lookupResult[0].String()
 }
 
 func getIfaceAddrs(iface string) []net.IP {
@@ -153,6 +168,7 @@ func handleDNSRequest(w dns.ResponseWriter, request *dns.Msg) {
 				rr, err := dns.NewRR(fmt.Sprintf(nsTemplate, domainName))
 				if err == nil {
 					m.Answer = append(m.Answer, rr)
+					m.Extra = append(m.Extra, dns.Copy(myIP))
 				}
 				continue
 			}
