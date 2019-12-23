@@ -1,0 +1,14 @@
+[Unit]
+Description=ZeroTier DNS Server
+
+[Service]
+Type=simple
+ExecStart=/opt/dnsserver/ztdns server
+WorkingDirectory=/opt/dnsserver
+User=nobody
+Group=nogroup
+Restart=always
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
