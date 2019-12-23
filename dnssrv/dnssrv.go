@@ -139,6 +139,14 @@ func handleDNSRequest(w dns.ResponseWriter, request *dns.Msg) {
 				continue
 			}
 
+			if (q.Qtype == dns.TypeSOA) && (domainName == lookupName) {
+				rr, err := dns.NewRR(fmt.Sprintf(soaTemplate, domainName))
+				if err == nil {
+					m.Answer = append(m.Answer, rr)
+				}
+				continue
+			}
+
 			if rec, ok := DNSDatabase[lookupName]; ok {
 				// We have someone with this name
 				switch q.Qtype {
