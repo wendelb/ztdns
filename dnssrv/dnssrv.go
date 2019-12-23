@@ -111,6 +111,16 @@ func parseQuery(m *dns.Msg) {
 	for _, q := range m.Question {
 		queryChan <- q.Name
 		lookupName := strings.ToLower(q.Name)
+
+		// handle ANY queries
+		if q.Qtype == dns.TypeANY {
+			rr, err := dns.NewRR(fmt.Sprintf("%s HINFO \"RFC8482\" \"\"", q.Name))
+			if err == nil {
+				m.Answer = append(m.Answer, rr)
+			}
+			continue
+		}
+
 		if rec, ok := DNSDatabase[lookupName]; ok {
 			switch q.Qtype {
 			case dns.TypeA:
