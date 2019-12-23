@@ -18,9 +18,9 @@ If you prefer the traditional installation route:
 
 #### Install
 
-1. First use `go get` to install the latest version, or download a precompiled release from [https://github.com/uxbh/ztdns/releases](https://github.com/uxbh/ztdns/releases)
+1. Clone the repository and build it
     ``` bash
-    go get -u github.com/uxbh/ztdns/
+    git clone github.com/wendelb/ztdns
     go build
     ```
 2. **If you are running on Linux**, run `sudo setcap cap_net_bind_service=+eip ./ztdns` to enable non-root users to bind privileged ports. On other operating systems, the program may need to be run as an administrator.
@@ -41,32 +41,9 @@ dig @serveraddress member.domain.zt AAAA
 ping member.domain.zt
 ```
 
-### Docker
+#### Running with systemd + apparmor
 
-If you prefer to run the server with Docker:
-
-#### Docker Requirements
-
-* [Docker](https://docs.docker.com/install/)
-* [Docker Compose](https://docs.docker.com/compose/install/)
-
-#### Docker Install
-
-1. Clone or download this repo
-1. Create a `.ztdns.toml` file in the main directory by copying the `.ztdns.toml.example` file.
-1. Add your API access token, Network ID, and interface name to the newly created configuration file.
-1. By default it will be bound to port 5356 on the host, that can be changed to standard DNS port 53 by modifying the `docker-compose.yml` file. *You must be running Docker with root permissions in order to bind the privileged port properly.*
-1. Run `docker-compose up` to start the server.
-1. Add a DNS entry in your ZeroTier members pointing to the member running ztdns.
-
-Once the server is up and running you will be able to resolve names based on the short name, domain and suffix defined in the configuration file (zt by default) from ZeroTier.
-
-```bash
-# remove -p 5356 if running on port 53
-dig @127.0.0.1 -p 5356 member.domain.zt A
-dig @127.0.0.1 -p 5356 member.domain.zt AAAA
-ping member.domain.zt
-```
+Coming soon
 
 ## Contributing
 
