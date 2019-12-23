@@ -1,6 +1,6 @@
 # ZerotierDNS
 
-ztDNS is a dedicated DNS server for a ZeroTier virtual network.
+ztDNS is a dedicated DNS server for a ZeroTier virtual network. This project is a fork from the original one, which you can find [here on github](https://github.com/uxbh/ztdns)
 
 ## Overview
 
