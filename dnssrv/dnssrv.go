@@ -157,9 +157,12 @@ func handleDNSRequest(w dns.ResponseWriter, request *dns.Msg) {
 			}
 
 			if (q.Qtype == dns.TypeSOA) && (domainName == lookupName) {
-				rr, err := dns.NewRR(fmt.Sprintf(soaTemplate, domainName))
-				if err == nil {
-					m.Answer = append(m.Answer, rr)
+				rrSOA, err1 := dns.NewRR(fmt.Sprintf(soaTemplate, domainName))
+				rrNS, err2 := dns.NewRR(fmt.Sprintf(nsTemplate, domainName))
+				if (err1 == nil) && (err2 == nil) {
+					m.Answer = append(m.Answer, rrSOA)
+					m.Ns = append(m.Ns, rrNS)
+					m.Extra = append(m.Extra, dns.Copy(myIP))
 				}
 				continue
 			}
