@@ -194,6 +194,11 @@ func handleDNSRequest(w dns.ResponseWriter, request *dns.Msg) {
 						}
 					}
 				}
+
+				if len(m.Answer) == 0 {
+					soa, _ := dns.NewRR(fmt.Sprintf(soaTemplate, domainName))
+					m.Ns = append(m.Ns, soa)
+				}
 			} else {
 				// We don't have someone with this name -> return record not found
 				m.SetRcode(request, dns.RcodeNameError)
