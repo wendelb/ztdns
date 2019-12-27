@@ -132,6 +132,7 @@ func handleDNSRequest(w dns.ResponseWriter, request *dns.Msg) {
 	m := new(dns.Msg)
 	m.SetReply(request)
 	m.Compress = false
+	m.Authoritative = true
 
 	if request.Opcode == dns.OpcodeQuery {
 		for _, q := range m.Question {
