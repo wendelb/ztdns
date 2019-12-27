@@ -11,7 +11,7 @@
 /opt/dnsserver/ztdns {
   #include <abstractions/base>
   #include <abstractions/nameservice>
-  #include <abstractions/ssl_keys>
+  #include <abstractions/ssl_certs>
 
   # Config File
   /opt/dnsserver/* r,
