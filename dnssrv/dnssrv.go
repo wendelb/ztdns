@@ -6,7 +6,9 @@
 package dnssrv
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"strings"
 	"time"
@@ -177,6 +179,14 @@ func handleDNSRequest(w dns.ResponseWriter, request *dns.Msg) {
 				continue
 			}
 
+			if q.Qtype == dns.TypeTXT {
+				rr, err := handleTXTRecords(lookupName)
+				if err == nil {
+					m.Answer = append(m.Answer, rr)
+					continue
+				}
+			}
+
 			if rec, ok := DNSDatabase[lookupName]; ok {
 				// We have someone with this name
 				switch q.Qtype {
@@ -211,4 +221,34 @@ func handleDNSRequest(w dns.ResponseWriter, request *dns.Msg) {
 	}
 
 	w.WriteMsg(m)
+}
+
+// Function to handle TXT Records: Will lookup a textile named after the question in the subdirectory "txt" and transforms its contents to a list of TXT-DNS-Records
+// Will check if the domain contains any characters, that are not allowed in a filename
+// Source: https://docs.microsoft.com/de-de/windows/win32/fileio/naming-a-file#naming-conventions
+func handleTXTRecords(domain string) (dns.RR, error) {
+	if strings.ContainsAny(domain, "<>:\"/\\|?*") {
+		return nil, errors.New("Invalid character in domain name")
+	}
+
+	// Since the last character is a dot, remove it to circumvent unexpected behaviour
+	filename := "txt/" + domain[0:len(domain)-1]
+
+	// Read file
+	buffer, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Debugf("Cannot read TXT record for %s: %s", domain, err.Error())
+		return nil, errors.New("Cannot read file")
+	}
+
+	data := string(buffer)
+	data = strings.TrimSpace(data)
+
+	lines := strings.Split(data, "\n")
+
+	rr := new(dns.TXT)
+	rr.Hdr = dns.RR_Header{Name: domain, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 0}
+	rr.Txt = lines
+
+	return rr, nil
 }
