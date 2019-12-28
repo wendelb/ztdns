@@ -16,6 +16,9 @@
   # Config File
   /opt/dnsserver/* r,
 
+  # TXT Records
+  /opt/dnsserver/txt/* r,
+
   /sys/kernel/mm/transparent_hugepage/hpage_pmd_size r,
 }
 
