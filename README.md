@@ -43,7 +43,23 @@ ping member.domain.zt
 
 #### Running with systemd + apparmor
 
-Coming soon
+The recommended way on running this server is by running it confined via Apparmor and managed with Systemd. The provided configuration files restrict the application to the bare minimum it needs. It will also assign any necessary privileges and capabilities to run as a non-root user.
+
+1. Clone the repo and build it as described in the Install section
+
+2. Install it into `/opt/dnsserver`:
+  * Create the directory if if does not already exist: `mkdir -p /opt/dnsserver`
+  * Copy the executable into the folder `cp ztdns /opt/dnsserver/`
+3. Create the configuration file
+4. Register the AppArmor profile
+  * Install the configuration `cp INSTALL/opt.dnsserver.ztdns /etc/apparmor.d/`
+  * Make AppArmor aware or it `systemctl reload apparmor`
+5. Install the systemd-unit
+  * Copy to the target location `cp INSTALL/ztdns.service /etc/systemd/system/`
+
+You can start the service using `systemctl start ztdns`. Once you are satisfied, autostart the service by issuing `systemctl enable ztdns`.
+
+Congratulations, you now have ztdns up and running!
 
 ## Contributing
 
