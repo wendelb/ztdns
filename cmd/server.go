@@ -110,6 +110,8 @@ func updateDNS() time.Time {
 	URL := viper.GetString("ZT.URL")
 	suffix := viper.GetString("suffix")
 
+	foundDomains := make(map[string]bool)
+
 	// Get all configured networks:
 	for domain, id := range viper.GetStringMapString("Networks") {
 		// Get ZeroTier Network info
@@ -153,7 +155,17 @@ func updateDNS() time.Time {
 					A:    ip4,
 					AAAA: ip6,
 				}
+				foundDomains[record] = true
 			}
+		}
+	}
+
+	// Now clean all domains drom the DNSDatabase that were not in the update from the API
+	for record := range dnssrv.DNSDatabase {
+		_, isValid := foundDomains[record]
+		if !isValid {
+			log.Infof("Removing stale domain %s", record)
+			delete(dnssrv.DNSDatabase, record)
 		}
 	}
 
